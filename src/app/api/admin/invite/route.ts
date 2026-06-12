@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
   const { data: invite, error: inviteError } = await supabase
     .from('invites')
     .upsert({
-      email,
+      email as any,
       role: 'country_manager',
       countries,
       invited_by: user.id,
