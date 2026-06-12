@@ -173,7 +173,8 @@ export async function submitPlayerProfile(submission: PlayerSubmission): Promise
     .single()
 
   if (error) throw new Error(`Submission failed: ${error.message}`)
-  return { id: data.id }
+  const row = data as unknown as { id: string } | null
+  return { id: row?.id ?? '' }
 }
 
 // ─── Map / Scout stats ────────────────────────────────────────────────────────
