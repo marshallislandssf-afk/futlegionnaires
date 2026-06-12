@@ -2,6 +2,27 @@ import { requireAdmin } from '@/lib/auth'
 import { createServerSupabaseClient } from '@/lib/supabase'
 import { SubmissionReviewClient } from '@/components/admin/SubmissionReviewClient'
 
+interface Submission {
+  id: string
+  created_at: string
+  status: string
+  name: string
+  date_of_birth?: string
+  position?: string
+  current_club?: string
+  current_club_country?: string
+  nationality_1: string
+  nationality_2?: string
+  nationality_3?: string
+  nationality_4?: string
+  nationality_5?: string
+  instagram_url?: string
+  transfermarkt_url?: string
+  video_urls?: string[]
+  description?: string
+  submitter_email: string
+}
+
 export default async function SubmissionsPage({
   searchParams,
 }: {
@@ -18,14 +39,14 @@ export default async function SubmissionsPage({
     .order('created_at', { ascending: false })
     .limit(50)
 
-  // Country managers only see submissions for their countries
   if (user.role === 'country_manager' && user.countries.length > 0) {
     query = query.or(
       user.countries.flatMap(c => [`nationality_1.eq.${c}`, `nationality_2.eq.${c}`]).join(',')
     )
   }
 
-  const { data: submissions } = await query
+  const { data: rawSubmissions } = await query
+  const submissions = (rawSubmissions ?? []) as unknown as Submission[]
 
   return (
     <div>
@@ -33,10 +54,9 @@ export default async function SubmissionsPage({
         <div>
           <h1 className="text-xl font-semibold mb-0.5">Submissions</h1>
           <p className="text-white/30 text-sm">
-            {submissions?.length ?? 0} {status} submission{submissions?.length !== 1 ? 's' : ''}
+            {submissions.length} {status} submission{submissions.length !== 1 ? 's' : ''}
           </p>
         </div>
-        {/* Status tabs */}
         <div className="flex gap-1">
           {['pending','approved','rejected'].map(s => (
             <a key={s} href={`?status=${s}`}
@@ -48,10 +68,7 @@ export default async function SubmissionsPage({
           ))}
         </div>
       </div>
-      <SubmissionReviewClient
-        submissions={submissions ?? []}
-        userRole={user.role}
-      />
+      <SubmissionReviewClient submissions={submissions} userRole={user.role} />
     </div>
   )
 }
