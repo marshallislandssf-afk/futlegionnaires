@@ -58,7 +58,7 @@ export async function getAdminUser(): Promise<AdminUser | null> {
     email: profile.email,
     role: profile.role as UserRole,
     full_name: profile.full_name ?? undefined,
-    countries: countryRows?.map(r => r.country) ?? [],
+    countries: countryRows?.map((r: { country: string }) => r.country) ?? [],
     is_active: profile.is_active,
   }
 }
