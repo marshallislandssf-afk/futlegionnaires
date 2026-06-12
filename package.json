@@ -1,0 +1,42 @@
+{
+  "name": "futlegionnaires",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "db:migrate": "node supabase/migrations/run.js"
+  },
+  "scripts": {
+    "import": "node scripts/import-players.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "@supabase/ssr": "^0.5.0",
+    "d3": "^7.9.0",
+    "d3-geo": "^3.1.1",
+    "topojson-client": "^3.1.0",
+    "next": "14.2.5",
+    "react": "^18",
+    "react-dom": "^18",
+    "lucide-react": "^0.400.0",
+    "papaparse": "^5.4.1",
+    "dotenv": "^16.4.5",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^2.4.0"
+  },
+  "devDependencies": {
+    "@types/papaparse": "^5.3.14",
+    "@types/d3": "^7.4.3",
+    "@types/topojson-client": "^3.1.4",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "autoprefixer": "^10.0.1",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5"
+  }
+}
