@@ -1,52 +1,56 @@
-import { requireAdmin, canEditPlayer } from '@/lib/auth'
+import { requireSuperAdmin } from '@/lib/auth'
 import { createServerSupabaseClient } from '@/lib/supabase'
-import { notFound, redirect } from 'next/navigation'
-import { PlayerEditForm } from '@/components/admin/PlayerEditForm'
-import type { Player } from '@/types'
-import Link from 'next/link'
-import { ChevronLeft } from 'lucide-react'
+import { TeamClient } from '@/components/admin/TeamClient'
 
-export default async function AdminPlayerEditPage({ params }: { params: { slug: string } }) {
-  const user = await requireAdmin()
+interface TeamMember {
+  id: string
+  email: string
+  full_name?: string
+  role: string
+  is_active: boolean
+  created_at: string
+  user_countries: { country: string }[]
+}
+
+interface PendingInvite {
+  id: string
+  email: string
+  role: string
+  countries: string[]
+  created_at: string
+  expires_at: string
+}
+
+interface Territory {
+  name: string
+  confederation: string
+  is_fifa_member: boolean
+}
+
+export default async function TeamPage() {
+  await requireSuperAdmin()
   const supabase = createServerSupabaseClient()
 
-  const { data: rawPlayer } = await supabase
-    .from('players').select('*').eq('slug', params.slug).single()
+  const [{ data: rawMembers }, { data: rawInvites }, { data: rawTerritories }] = await Promise.all([
+    supabase.from('user_profiles').select(`*, user_countries(country)`).order('created_at'),
+    supabase.from('invites').select('*').is('accepted_at', null).gt('expires_at', new Date().toISOString()).order('created_at', { ascending: false }),
+    supabase.from('territories').select('name, confederation, is_fifa_member').order('name'),
+  ])
 
-  if (!rawPlayer) notFound()
-
-  // Cast to Player — Supabase's generated type for this table isn't wired up yet
-  // so we cast explicitly. All fields are defined in src/types/index.ts.
-  const player = rawPlayer as unknown as Player
-
-  const nats = [
-    player.nationality_1,
-    player.nationality_2,
-    player.nationality_3,
-    player.nationality_4,
-    player.nationality_5,
-  ]
-
-  if (!canEditPlayer(user, nats)) {
-    redirect('/admin/players')
-  }
-
-  const { data: territories } = await supabase
-    .from('territories').select('name, confederation, is_fifa_member').order('name')
+  const members = (rawMembers ?? []) as unknown as TeamMember[]
+  const pendingInvites = (rawInvites ?? []) as unknown as PendingInvite[]
+  const territories = (rawTerritories ?? []) as unknown as Territory[]
 
   return (
-    <div className="max-w-2xl">
-      <Link href="/admin/players" className="flex items-center gap-1 text-xs text-white/30 hover:text-white/60 mb-5 transition-colors">
-        <ChevronLeft size={13} /> Back to players
-      </Link>
+    <div>
       <div className="mb-6">
-        <h1 className="text-xl font-semibold mb-0.5">{player.name}</h1>
-        <p className="text-white/30 text-sm">{player.current_club} · {player.position}</p>
+        <h1 className="text-xl font-semibold mb-0.5">Team</h1>
+        <p className="text-white/30 text-sm">Invite country managers and manage their country access</p>
       </div>
-      <PlayerEditForm
-        player={player}
-        territories={territories?.map(t => t.name) ?? []}
-        userRole={user.role}
+      <TeamClient
+        members={members}
+        pendingInvites={pendingInvites}
+        territories={territories}
       />
     </div>
   )
