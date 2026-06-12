@@ -32,7 +32,7 @@ export async function PATCH(
       status: 'rejected',
       reviewer_notes: reviewer_notes ?? null,
       reviewed_at: new Date().toISOString(),
-    }).eq('id', params.id)
+    } as any).eq('id', params.id)
 
     return NextResponse.json({ success: true, action: 'rejected' })
   }
@@ -81,7 +81,7 @@ export async function PATCH(
     reviewer_notes: reviewer_notes ?? null,
     reviewed_at: new Date().toISOString(),
     player_id: newPlayer?.id ?? null,
-  }).eq('id', params.id)
+  } as any).eq('id', params.id)
 
   return NextResponse.json({ success: true, action: 'approved', player_id: newPlayer?.id })
 }
