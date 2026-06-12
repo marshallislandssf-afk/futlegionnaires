@@ -97,7 +97,7 @@ const COUNTRY_CONF: Record<string, Confederation> = {
   'Djibouti':'CAF','Egypt':'CAF','Equatorial Guinea':'CAF','Eritrea':'CAF',
   'Eswatini':'CAF','Ethiopia':'CAF','Gabon':'CAF','Gambia':'CAF',
   'Ghana':'CAF','Guinea':'CAF','Guinea-Bissau':'CAF',
-  "Ivory Coast":'CAF',"Côte d'Ivoire":'CAF','Ivory Coast':'CAF',
+  "Ivory Coast":'CAF',"Côte d'Ivoire":'CAF',
   'Kenya':'CAF','Lesotho':'CAF','Liberia':'CAF','Libya':'CAF',
   'Madagascar':'CAF','Malawi':'CAF','Mali':'CAF','Mauritania':'CAF',
   'Mauritius':'CAF','Mayotte':'CAF','Morocco':'CAF','Mozambique':'CAF',
