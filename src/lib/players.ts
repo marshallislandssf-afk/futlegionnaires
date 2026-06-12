@@ -150,7 +150,7 @@ export async function importPlayerFromSportsDB(name: string, extraData: Partial<
 
   const { data, error } = await supabase
     .from('players')
-    .upsert(playerData, { onConflict: 'slug' })
+    .upsert(playerData as any, { onConflict: 'slug' })
     .select()
     .single()
 
@@ -168,7 +168,7 @@ export async function submitPlayerProfile(submission: PlayerSubmission): Promise
     .insert({
       ...submission,
       status: 'pending',
-    })
+    } as any)
     .select('id')
     .single()
 
