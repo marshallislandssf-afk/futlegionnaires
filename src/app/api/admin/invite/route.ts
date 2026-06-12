@@ -20,13 +20,13 @@ export async function POST(request: NextRequest) {
   const { data: invite, error: inviteError } = await supabase
     .from('invites')
     .upsert({
-      email as any,
+      email,
       role: 'country_manager',
       countries,
       invited_by: user.id,
       accepted_at: null,
       expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-    }, { onConflict: 'email' })
+    } as any, { onConflict: 'email' })
     .select()
     .single()
 
