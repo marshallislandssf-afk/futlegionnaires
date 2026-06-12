@@ -40,7 +40,7 @@ export async function getAdminUser(): Promise<AdminUser | null> {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) return null
 
-  const { data: profile } = await supabase
+  const { data: profile } = await (supabase as any)
     .from('user_profiles')
     .select('id, email, role, full_name, is_active')
     .eq('id', session.user.id)
@@ -48,7 +48,7 @@ export async function getAdminUser(): Promise<AdminUser | null> {
 
   if (!profile || !profile.is_active) return null
 
-  const { data: countryRows } = await supabase
+  const { data: countryRows } = await (supabase as any)
     .from('user_countries')
     .select('country')
     .eq('user_id', session.user.id)
