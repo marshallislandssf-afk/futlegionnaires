@@ -8,8 +8,8 @@ export default async function DashboardPage() {
   const supabase = createServerSupabaseClient()
 
   // Build scoped player query
-  let playerQuery = supabase.from('players').select('id', { count: 'exact', head: true }).eq('is_active', true)
-  let submissionQuery = supabase.from('player_submissions').select('id', { count: 'exact', head: true }).eq('status', 'pending')
+  let playerQuery = (supabase as any).from('players').select('id', { count: 'exact', head: true }).eq('is_active', true)
+  let submissionQuery = (supabase as any).from('player_submissions').select('id', { count: 'exact', head: true }).eq('status', 'pending')
 
   // Country managers only see their scope
   if (user.role === 'country_manager' && user.countries.length > 0) {
