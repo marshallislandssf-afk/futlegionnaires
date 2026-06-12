@@ -32,9 +32,9 @@ export default async function TeamPage() {
   const supabase = createServerSupabaseClient()
 
   const [{ data: rawMembers }, { data: rawInvites }, { data: rawTerritories }] = await Promise.all([
-    supabase.from('user_profiles').select(`*, user_countries(country)`).order('created_at'),
-    supabase.from('invites').select('*').is('accepted_at', null).gt('expires_at', new Date().toISOString()).order('created_at', { ascending: false }),
-    supabase.from('territories').select('name, confederation, is_fifa_member').order('name'),
+    (supabase as any).from('user_profiles').select(`*, user_countries(country)`).order('created_at'),
+    (supabase as any).from('invites').select('*').is('accepted_at', null).gt('expires_at', new Date().toISOString()).order('created_at', { ascending: false }),
+    (supabase as any).from('territories').select('name, confederation, is_fifa_member').order('name'),
   ])
 
   const members = (rawMembers ?? []) as unknown as TeamMember[]
