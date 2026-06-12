@@ -8,7 +8,7 @@ export const metadata = {
 
 export default async function SubmitPage() {
   const supabase = createServerSupabaseClient()
-  const { data: territories } = await supabase
+  const { data: territories } = await (supabase as any)
     .from('territories')
     .select('name, confederation, is_fifa_member')
     .order('name')
