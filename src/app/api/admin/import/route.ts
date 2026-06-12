@@ -266,14 +266,14 @@ export async function POST(request: NextRequest) {
     const batch = toWrite.slice(i, i + BATCH)
     const { data, error } = await supabase
       .from('players')
-      .upsert(batch as any as any, { onConflict: 'slug' })
+      .upsert(batch as any, { onConflict: 'slug' })
       .select('id')
     if (error) errors.push(`Batch ${Math.floor(i/BATCH)+1}: ${error.message}`)
     else upserted += data?.length ?? batch.length
   }
 
   // Log this import batch to the import_log table (best-effort)
-  await supabase.from('import_log').insert(({
+  await supabase.from('import_log').insert({
     batch_label: batchLabel || file.name,
     strategy,
     file_name: file.name,
