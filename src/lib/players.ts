@@ -12,6 +12,7 @@ import type { Player, PlayerSearchParams, PlayerSearchResponse, PlayerSubmission
 
 export async function searchPlayers(params: PlayerSearchParams): Promise<PlayerSearchResponse> {
   const supabase = createServerSupabaseClient()
+  const db = supabase as any
   const {
     q,
     position,
@@ -24,7 +25,7 @@ export async function searchPlayers(params: PlayerSearchParams): Promise<PlayerS
     page_size = 24,
   } = params
 
-  let query = supabase
+  let query = db
     .from('players')
     .select('*', { count: 'exact' })
     .eq('is_active', true)
@@ -68,14 +69,15 @@ export async function searchPlayers(params: PlayerSearchParams): Promise<PlayerS
 
 export async function getPlayerBySlug(slug: string): Promise<Player | null> {
   const supabase = createServerSupabaseClient()
-  const { data, error } = await supabase
+  const db = supabase as any
+  const { data, error } = await db
     .from('players')
     .select('*')
     .eq('slug', slug)
     .single()
 
   if (error) return null
-  return data as Player
+  return data as unknown as Player
 }
 
 // ─── Enrich from TheSportsDB ──────────────────────────────────────────────────
@@ -86,13 +88,15 @@ export async function getPlayerBySlug(slug: string): Promise<Player | null> {
  */
 export async function enrichPlayerFromSportsDB(playerId: string): Promise<Player | null> {
   const supabase = createServerSupabaseClient()
+  const db = supabase as any
 
-  const { data: player } = await supabase
+  const { data: rawPlayer } = await db
     .from('players')
     .select('*')
     .eq('id', playerId)
     .single()
 
+  const player = rawPlayer as Player | null
   if (!player) return null
 
   // If we have a SportsDB ID, do a direct lookup
@@ -101,7 +105,7 @@ export async function enrichPlayerFromSportsDB(playerId: string): Promise<Player
     if (raw) {
       const enriched = normaliseSportsDBPlayer(raw)
       // Only update fields that SportsDB owns — don't overwrite our curated nationality data
-      const { data: updated } = await supabase
+      const { data: updated } = await db
         .from('players')
         .update({
           current_club: enriched.current_club ?? player.current_club,
@@ -129,6 +133,7 @@ export async function enrichPlayerFromSportsDB(playerId: string): Promise<Player
  */
 export async function importPlayerFromSportsDB(name: string, extraData: Partial<Player> = {}): Promise<Player | null> {
   const supabase = createServerSupabaseClient()
+  const db = supabase as any
 
   const results = await searchPlayersByName(name)
   if (!results.length) return null
@@ -162,8 +167,9 @@ export async function importPlayerFromSportsDB(name: string, extraData: Partial<
 
 export async function submitPlayerProfile(submission: PlayerSubmission): Promise<{ id: string }> {
   const supabase = createServerSupabaseClient()
+  const db = supabase as any
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from('player_submissions')
     .insert({
       ...submission,
@@ -181,27 +187,30 @@ export async function submitPlayerProfile(submission: PlayerSubmission): Promise
 
 export async function getMapStats(): Promise<MapStats> {
   const supabase = createServerSupabaseClient()
+  const db = supabase as any
 
   // Confederation counts
-  const { data: confData } = await supabase
+  const { data: rawConfData } = await db
     .from('players')
     .select('current_club_confederation')
     .eq('is_active', true)
 
+  const confData = (rawConfData ?? []) as { current_club_confederation: string }[]
   const confCounts: Record<string, number> = {}
-  for (const row of confData ?? []) {
+  for (const row of confData) {
     const c = row.current_club_confederation
     confCounts[c] = (confCounts[c] ?? 0) + 1
   }
 
   // Top leagues (club + country grouped)
-  const { data: leagueData } = await supabase
+  const { data: rawLeagueData } = await db
     .from('players')
     .select('current_club, current_club_country, current_club_confederation')
     .eq('is_active', true)
 
+  const leagueData = (rawLeagueData ?? []) as { current_club: string; current_club_country: string; current_club_confederation: string }[]
   const leagueCounts: Record<string, { country: string; confederation: string; count: number }> = {}
-  for (const row of leagueData ?? []) {
+  for (const row of leagueData) {
     const key = row.current_club_country
     if (!leagueCounts[key]) {
       leagueCounts[key] = { country: row.current_club_country, confederation: row.current_club_confederation, count: 0 }
@@ -210,20 +219,21 @@ export async function getMapStats(): Promise<MapStats> {
   }
 
   // Top nations with uncapped eligible players
-  const { data: natData } = await supabase
+  const { data: rawNatData } = await db
     .from('players')
     .select('nationality_1, nationality_2, nationality_3, nationality_4, nationality_5')
     .eq('is_active', true)
 
+  const natData = (rawNatData ?? []) as { nationality_1?: string; nationality_2?: string; nationality_3?: string; nationality_4?: string; nationality_5?: string }[]
   const natCounts: Record<string, number> = {}
-  for (const row of natData ?? []) {
+  for (const row of natData) {
     const nats = [row.nationality_1, row.nationality_2, row.nationality_3, row.nationality_4, row.nationality_5].filter(Boolean)
     for (const nat of nats) {
       if (nat) natCounts[nat] = (natCounts[nat] ?? 0) + 1
     }
   }
 
-  const totalPlayers = confData?.length ?? 0
+  const totalPlayers = confData.length
 
   return {
     total_players: totalPlayers,
