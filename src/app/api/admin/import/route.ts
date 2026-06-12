@@ -273,7 +273,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Log this import batch to the import_log table (best-effort)
-  try { await supabase.from('import_log').insert({
+  try { await (supabase as any).from('import_log').insert({
     batch_label: batchLabel || file.name,
     strategy,
     file_name: file.name,
