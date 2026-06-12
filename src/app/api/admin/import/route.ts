@@ -273,7 +273,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Log this import batch to the import_log table (best-effort)
-  await supabase.from('import_log').insert({
+  try { await supabase.from('import_log').insert({
     batch_label: batchLabel || file.name,
     strategy,
     file_name: file.name,
@@ -282,7 +282,7 @@ export async function POST(request: NextRequest) {
     updated_players: updatedCount,
     unchanged_players: unchangedCount,
     errors: errors.length ? errors : null,
-  } as any).then(() => {}).catch(() => {})
+  } as any) } catch (_) {}
 
   return NextResponse.json({
     success: true,
