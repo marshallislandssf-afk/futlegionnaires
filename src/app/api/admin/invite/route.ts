@@ -73,6 +73,6 @@ export async function DELETE(request: NextRequest) {
   const { user_id } = await request.json()
   if (!user_id) return NextResponse.json({ error: 'user_id required' }, { status: 400 })
 
-  await supabase.from('user_profiles').update({ is_active: false }).eq('id', user_id)
+  await supabase.from('user_profiles').update({ is_active: false } as any).eq('id', user_id)
   return NextResponse.json({ success: true })
 }
