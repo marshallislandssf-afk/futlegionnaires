@@ -10,20 +10,27 @@ export default async function AdminPlayerEditPage({ params }: { params: { slug: 
   const user = await requireAdmin()
   const supabase = createServerSupabaseClient()
 
-  const { data: player } = await supabase
+  const { data: rawPlayer } = await supabase
     .from('players').select('*').eq('slug', params.slug).single()
 
-  if (!player) notFound()
-  const p = player as NonNullable<typeof player>
+  if (!rawPlayer) notFound()
 
-  const nats = [p.nationality_1, p.nationality_2, p.nationality_3,
-    p.nationality_4, p.nationality_5]
+  // Cast to Player — Supabase's generated type for this table isn't wired up yet
+  // so we cast explicitly. All fields are defined in src/types/index.ts.
+  const player = rawPlayer as unknown as Player
+
+  const nats = [
+    player.nationality_1,
+    player.nationality_2,
+    player.nationality_3,
+    player.nationality_4,
+    player.nationality_5,
+  ]
 
   if (!canEditPlayer(user, nats)) {
     redirect('/admin/players')
   }
 
-  // Load territories for dropdowns
   const { data: territories } = await supabase
     .from('territories').select('name, confederation, is_fifa_member').order('name')
 
@@ -33,11 +40,11 @@ export default async function AdminPlayerEditPage({ params }: { params: { slug: 
         <ChevronLeft size={13} /> Back to players
       </Link>
       <div className="mb-6">
-        <h1 className="text-xl font-semibold mb-0.5">{p.name}</h1>
-        <p className="text-white/30 text-sm">{p.current_club} · {p.position}</p>
+        <h1 className="text-xl font-semibold mb-0.5">{player.name}</h1>
+        <p className="text-white/30 text-sm">{player.current_club} · {player.position}</p>
       </div>
       <PlayerEditForm
-        player={p as Player}
+        player={player}
         territories={territories?.map(t => t.name) ?? []}
         userRole={user.role}
       />
