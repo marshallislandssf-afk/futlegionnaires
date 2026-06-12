@@ -14,9 +14,10 @@ export default async function AdminPlayerEditPage({ params }: { params: { slug: 
     .from('players').select('*').eq('slug', params.slug).single()
 
   if (!player) notFound()
+  const p = player as NonNullable<typeof player>
 
-  const nats = [player.nationality_1, player.nationality_2, player.nationality_3,
-    player.nationality_4, player.nationality_5]
+  const nats = [p.nationality_1, p.nationality_2, p.nationality_3,
+    p.nationality_4, p.nationality_5]
 
   if (!canEditPlayer(user, nats)) {
     redirect('/admin/players')
@@ -32,11 +33,11 @@ export default async function AdminPlayerEditPage({ params }: { params: { slug: 
         <ChevronLeft size={13} /> Back to players
       </Link>
       <div className="mb-6">
-        <h1 className="text-xl font-semibold mb-0.5">{player.name}</h1>
-        <p className="text-white/30 text-sm">{player.current_club} · {player.position}</p>
+        <h1 className="text-xl font-semibold mb-0.5">{p.name}</h1>
+        <p className="text-white/30 text-sm">{p.current_club} · {p.position}</p>
       </div>
       <PlayerEditForm
-        player={player as Player}
+        player={p as Player}
         territories={territories?.map(t => t.name) ?? []}
         userRole={user.role}
       />
