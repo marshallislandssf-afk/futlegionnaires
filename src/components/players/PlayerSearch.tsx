@@ -36,7 +36,7 @@ export function PlayerSearch({ initialConf }: { initialConf?: Confederation }) {
   const [confederation, setConfederation] = useState<Confederation | ''>(initialConf ?? '')
   const [nationality, setNationality] = useState('')
   const [players, setPlayers] = useState<Player[]>([])
-  const [total, setTotal] = useState(0)
+  const [total, setTotal] = useState<number>(0)
   const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(false)
   const [filtersOpen, setFiltersOpen] = useState(false)
@@ -59,8 +59,8 @@ export function PlayerSearch({ initialConf }: { initialConf?: Confederation }) {
     try {
       const res = await fetch(`/api/players?${params}`)
       const data: PlayerSearchResponse = await res.json()
-      setPlayers(resetPage ? data.players : prev => [...prev, ...data.players])
-      setTotal(data.total)
+      setPlayers(resetPage ? (data.players ?? []) : prev => [...prev, ...(data.players ?? [])])
+      setTotal(data.total ?? 0)
     } catch (err) {
       console.error('Search error:', err)
     } finally {
@@ -154,7 +154,7 @@ export function PlayerSearch({ initialConf }: { initialConf?: Confederation }) {
 
       {/* Results count */}
       <p className="text-xs text-white/30 mb-4">
-        {loading ? 'Searching…' : `${total.toLocaleString()} player${total !== 1 ? 's' : ''} found`}
+        {loading ? 'Searching…' : `${(total ?? 0).toLocaleString()} player${(total ?? 0) !== 1 ? 's' : ''} found`}
       </p>
 
       {/* Grid */}
