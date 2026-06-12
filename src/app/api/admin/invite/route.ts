@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
   const supabase = createServerSupabaseClient()
 
   // Upsert invite record (idempotent — re-inviting the same email refreshes it)
-  const { data: invite, error: inviteError } = await supabase
+  const { data: rawInvite, error: inviteError } = await supabase
     .from('invites')
     .upsert({
       email,
@@ -29,6 +29,7 @@ export async function POST(request: NextRequest) {
     } as any, { onConflict: 'email' })
     .select()
     .single()
+  const invite = rawInvite as unknown as { id: string; email: string; countries: string[] } | null
 
   if (inviteError) {
     return NextResponse.json({ error: inviteError.message }, { status: 500 })
