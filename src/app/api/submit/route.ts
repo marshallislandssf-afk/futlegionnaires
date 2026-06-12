@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { submitPlayerProfile } from '@/lib/players'
 import type { PlayerSubmission } from '@/types'
 
-export const runtime = 'edge'
+export const runtime = 'nodejs'
 
 export async function POST(request: NextRequest) {
   try {
