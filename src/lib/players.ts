@@ -111,7 +111,7 @@ export async function enrichPlayerFromSportsDB(playerId: string): Promise<Player
           status: enriched.status ?? player.status,
           is_active: enriched.is_active ?? player.is_active,
           updated_at: new Date().toISOString(),
-        })
+        } as any)
         .eq('id', playerId)
         .select()
         .single()
