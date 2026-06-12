@@ -64,11 +64,12 @@ export async function PATCH(
     status: 'Active',
   }
 
-  const { data: newPlayer, error: playerError } = await supabase
+  const { data: rawNewPlayer, error: playerError } = await supabase
     .from('players')
     .upsert(playerData as any, { onConflict: 'slug' })
     .select('id')
     .single()
+  const newPlayer = rawNewPlayer as unknown as { id: string } | null
 
   if (playerError) {
     return NextResponse.json({ error: playerError.message }, { status: 500 })
@@ -79,8 +80,8 @@ export async function PATCH(
     status: 'approved',
     reviewer_notes: reviewer_notes ?? null,
     reviewed_at: new Date().toISOString(),
-    player_id: newPlayer.id,
+    player_id: newPlayer?.id ?? null,
   }).eq('id', params.id)
 
-  return NextResponse.json({ success: true, action: 'approved', player_id: newPlayer.id })
+  return NextResponse.json({ success: true, action: 'approved', player_id: newPlayer?.id })
 }
