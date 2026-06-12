@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
   const supabase = createServerSupabaseClient()
 
   // Upsert invite record (idempotent — re-inviting the same email refreshes it)
-  const { data: rawInvite, error: inviteError } = await supabase
+  const { data: rawInvite, error: inviteError } = await (supabase as any)
     .from('invites')
     .upsert({
       email,
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
 
   if (authError) {
     // Clean up the invite if the auth call failed
-    if (invite?.id) await supabase.from('invites').delete().eq('id', invite.id)
+    if (invite?.id) await (supabase as any).from('invites').delete().eq('id', invite.id)
     return NextResponse.json({ error: authError.message }, { status: 500 })
   }
 
@@ -65,7 +65,7 @@ export async function DELETE(request: NextRequest) {
 
   if (inviteId) {
     // Cancel a pending invite
-    await supabase.from('invites').delete().eq('id', inviteId)
+    await (supabase as any).from('invites').delete().eq('id', inviteId)
     return NextResponse.json({ success: true })
   }
 
@@ -73,6 +73,6 @@ export async function DELETE(request: NextRequest) {
   const { user_id } = await request.json()
   if (!user_id) return NextResponse.json({ error: 'user_id required' }, { status: 400 })
 
-  await supabase.from('user_profiles').update({ is_active: false } as any).eq('id', user_id)
+  await (supabase as any).from('user_profiles').update({ is_active: false }).eq('id', user_id)
   return NextResponse.json({ success: true })
 }
