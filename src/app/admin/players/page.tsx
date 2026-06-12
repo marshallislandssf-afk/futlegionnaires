@@ -22,7 +22,6 @@ export default async function AdminPlayersPage({
     .order('name')
     .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1)
 
-  // Scope to country manager's countries
   if (user.role === 'country_manager' && user.countries.length > 0) {
     query = query.or(
       user.countries.flatMap(c => [
@@ -36,7 +35,8 @@ export default async function AdminPlayersPage({
     query = query.or(`name.ilike.%${q}%,current_club.ilike.%${q}%`)
   }
 
-  const { data: players, count } = await query
+  const { data: rawPlayers, count } = await query
+  const players = (rawPlayers ?? []) as unknown as Player[]
   const total = count ?? 0
   const totalPages = Math.ceil(total / PAGE_SIZE)
 
@@ -49,7 +49,6 @@ export default async function AdminPlayersPage({
         </div>
       </div>
 
-      {/* Search */}
       <form className="mb-5">
         <input
           name="q"
@@ -59,7 +58,6 @@ export default async function AdminPlayersPage({
         />
       </form>
 
-      {/* Table */}
       <div className="bg-white/[0.03] border border-white/8 rounded-xl overflow-hidden">
         <table className="w-full text-sm">
           <thead>
@@ -72,7 +70,7 @@ export default async function AdminPlayersPage({
             </tr>
           </thead>
           <tbody>
-            {(players as Player[]).map(player => {
+            {players.map(player => {
               const nats = [player.nationality_1, player.nationality_2, player.nationality_3,
                 player.nationality_4, player.nationality_5].filter(Boolean)
               return (
@@ -89,7 +87,7 @@ export default async function AdminPlayersPage({
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap gap-1">
                       {nats.map((n, i) => (
-                        <span key={n} className={`text-[10px] px-1.5 py-0.5 rounded ${
+                        <span key={String(n)} className={`text-[10px] px-1.5 py-0.5 rounded ${
                           i === 0 ? 'bg-[#1D9E75]/15 text-[#1D9E75]/80' : 'bg-white/5 text-white/30'
                         }`}>{n}</span>
                       ))}
@@ -108,13 +106,11 @@ export default async function AdminPlayersPage({
             })}
           </tbody>
         </table>
-
-        {players?.length === 0 && (
+        {players.length === 0 && (
           <div className="text-center py-12 text-white/25 text-sm">No players found.</div>
         )}
       </div>
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between mt-4 text-xs text-white/30">
           <span>Page {page} of {totalPages}</span>
