@@ -4,6 +4,26 @@ import { createServerSupabaseClient } from '@/lib/supabase'
 import { generateSlug } from '@/lib/players'
 import { getConfederation } from '@/lib/sportsdb'
 
+interface Submission {
+  id: string
+  status: string
+  name: string
+  date_of_birth?: string
+  position?: string
+  current_club?: string
+  current_club_country?: string
+  nationality_1: string
+  nationality_2?: string
+  nationality_3?: string
+  nationality_4?: string
+  nationality_5?: string
+  instagram_url?: string
+  transfermarkt_url?: string
+  video_urls?: string[]
+  description?: string
+  submitter_email: string
+}
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -17,10 +37,12 @@ export async function PATCH(
   }
 
   const supabase = createServerSupabaseClient()
+  const db = supabase as any
 
-  // Fetch the submission
-  const { data: sub } = await supabase
+  const { data: rawSub } = await db
     .from('player_submissions').select('*').eq('id', params.id).single()
+
+  const sub = rawSub as Submission | null
 
   if (!sub) return NextResponse.json({ error: 'Submission not found' }, { status: 404 })
   if (sub.status !== 'pending') {
@@ -28,16 +50,15 @@ export async function PATCH(
   }
 
   if (action === 'reject') {
-    await (supabase as any).from('player_submissions').update({
+    await db.from('player_submissions').update({
       status: 'rejected',
       reviewer_notes: reviewer_notes ?? null,
       reviewed_at: new Date().toISOString(),
-    } as any).eq('id', params.id)
-
+    }).eq('id', params.id)
     return NextResponse.json({ success: true, action: 'rejected' })
   }
 
-  // ── Approve: create the player record ────────────────────────
+  // Approve — create the player record
   const slug = generateSlug(sub.name)
   const clubCountry = sub.current_club_country ?? ''
 
@@ -64,24 +85,24 @@ export async function PATCH(
     status: 'Active',
   }
 
-  const { data: rawNewPlayer, error: playerError } = await (supabase as any)
+  const { data: rawNewPlayer, error: playerError } = await db
     .from('players')
-    .upsert(playerData as any, { onConflict: 'slug' })
+    .upsert(playerData, { onConflict: 'slug' })
     .select('id')
     .single()
-  const newPlayer = rawNewPlayer as unknown as { id: string } | null
 
   if (playerError) {
     return NextResponse.json({ error: playerError.message }, { status: 500 })
   }
 
-  // Mark submission as approved and link to the new player
-  await (supabase as any).from('player_submissions').update({
+  const newPlayer = rawNewPlayer as { id: string } | null
+
+  await db.from('player_submissions').update({
     status: 'approved',
     reviewer_notes: reviewer_notes ?? null,
     reviewed_at: new Date().toISOString(),
     player_id: newPlayer?.id ?? null,
-  } as any).eq('id', params.id)
+  }).eq('id', params.id)
 
   return NextResponse.json({ success: true, action: 'approved', player_id: newPlayer?.id })
 }
