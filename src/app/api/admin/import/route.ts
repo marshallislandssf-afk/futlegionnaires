@@ -116,7 +116,7 @@ function rowToPlayerFields(row: Record<string,string>, colMap: Record<string,str
   const fields: Record<string,unknown> = {
     slug: generateSlug(name), name,
     date_of_birth: yob ? `${yob}-01-01` : undefined,
-    position: POSITION_MAP[rawPos.toLowerCase()] ?? rawPos || undefined,
+    position: (POSITION_MAP[rawPos.toLowerCase()] ?? rawPos) || undefined,
     current_club: getVal(row, colMap, 'current_club') || undefined,
     current_club_country: clubCountry || undefined,
     current_club_confederation: clubCountry ? getConfederation(clubCountry) : undefined,
