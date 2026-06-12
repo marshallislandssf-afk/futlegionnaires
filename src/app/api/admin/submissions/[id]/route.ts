@@ -28,7 +28,7 @@ export async function PATCH(
   }
 
   if (action === 'reject') {
-    await supabase.from('player_submissions').update({
+    await (supabase as any).from('player_submissions').update({
       status: 'rejected',
       reviewer_notes: reviewer_notes ?? null,
       reviewed_at: new Date().toISOString(),
@@ -64,7 +64,7 @@ export async function PATCH(
     status: 'Active',
   }
 
-  const { data: rawNewPlayer, error: playerError } = await supabase
+  const { data: rawNewPlayer, error: playerError } = await (supabase as any)
     .from('players')
     .upsert(playerData as any, { onConflict: 'slug' })
     .select('id')
@@ -76,7 +76,7 @@ export async function PATCH(
   }
 
   // Mark submission as approved and link to the new player
-  await supabase.from('player_submissions').update({
+  await (supabase as any).from('player_submissions').update({
     status: 'approved',
     reviewer_notes: reviewer_notes ?? null,
     reviewed_at: new Date().toISOString(),
