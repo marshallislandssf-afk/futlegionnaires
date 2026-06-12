@@ -265,5 +265,3 @@ export function SubmitFormClient({ territories }: { territories: Territory[] }) 
     </div>
   )
 }
-ENDOFFILE
-echo "done"
