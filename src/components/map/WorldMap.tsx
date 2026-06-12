@@ -64,11 +64,11 @@ const COUNTRY_CONF: Record<string, Confederation> = {
   'Iraq': 'AFC', 'Afghanistan': 'AFC', 'Saudi Arabia': 'AFC', 'Uzbekistan': 'AFC',
   'Malaysia': 'AFC', 'Yemen': 'AFC', 'Nepal': 'AFC', 'North Korea': 'AFC',
   'Syria': 'AFC', 'Sri Lanka': 'AFC', 'Cambodia': 'AFC', 'Jordan': 'AFC',
-  'Azerbaijan': 'AFC', 'United Arab Emirates': 'AFC', 'Tajikistan': 'AFC',
-  'Israel': 'AFC', 'Laos': 'AFC', 'Singapore': 'AFC', 'Oman': 'AFC',
+  'United Arab Emirates': 'AFC', 'Tajikistan': 'AFC',
+  'Israel': 'UEFA', 'Laos': 'AFC', 'Singapore': 'AFC', 'Oman': 'AFC',
   'State of Palestine': 'AFC', 'Kuwait': 'AFC', 'Mongolia': 'AFC',
   'Kyrgyzstan': 'AFC', 'Turkmenistan': 'AFC', 'Qatar': 'AFC', 'Bahrain': 'AFC',
-  'Timor-Leste': 'AFC', 'Lebanon': 'AFC', 'Cyprus': 'AFC', 'Brunei': 'AFC',
+  'Timor-Leste': 'AFC', 'Lebanon': 'AFC', 'Brunei': 'AFC',
   'Australia': 'AFC', 'New Zealand': 'OFC',
   // OFC
   'Papua New Guinea': 'OFC', 'Fiji': 'OFC', 'Solomon Islands': 'OFC',
@@ -162,8 +162,8 @@ export function WorldMap({ stats, selectedConf, onSelectConf }: Props) {
         '804': 'Ukraine', '784': 'United Arab Emirates', '826': 'United Kingdom',
         '840': 'United States of America', '858': 'Uruguay', '860': 'Uzbekistan',
         '862': 'Venezuela', '704': 'Vietnam', '887': 'Yemen', '894': 'Zambia',
-        '716': 'Zimbabwe', '096': 'Brunei', '104': 'Myanmar', '466': 'Mali',
-        '072': 'Botswana', '064': 'Bhutan', '788': 'Tunisia',
+        '716': 'Zimbabwe', '096': 'Brunei', '104': 'Myanmar',
+        '072': 'Botswana', '064': 'Bhutan',
       }
 
       // Clear any previous render
