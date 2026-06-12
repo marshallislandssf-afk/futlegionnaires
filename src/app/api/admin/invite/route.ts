@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
 
   if (authError) {
     // Clean up the invite if the auth call failed
-    await supabase.from('invites').delete().eq('id', invite.id)
+    if (invite?.id) await supabase.from('invites').delete().eq('id', invite.id)
     return NextResponse.json({ error: authError.message }, { status: 500 })
   }
 
