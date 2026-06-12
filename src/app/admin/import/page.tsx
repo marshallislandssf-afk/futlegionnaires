@@ -16,6 +16,7 @@ interface DiffRow {
   slug: string
   status: 'new' | 'updated' | 'unchanged'
   changes: Record<string, { from: unknown; to: unknown }>
+  change_count?: number
 }
 
 interface ImportResult {
@@ -363,14 +364,14 @@ export default function ImportPage() {
                 {visibleDiff.map(row => (
                   <div key={row.slug} className="bg-white/[0.03] border border-white/8 rounded-lg overflow-hidden">
                     <button
-                      onClick={() => row.change_count > 0 && toggleRow(row.slug)}
+                      onClick={() => (row.change_count ?? Object.keys(row.changes).length) > 0 && toggleRow(row.slug)}
                       className="w-full flex items-center gap-3 px-3 py-2.5 text-left"
                     >
                       <span className="text-sm flex-1 truncate font-medium">{row.name}</span>
                       <StatusPill status={row.status} />
                       {row.status !== 'unchanged' && (
                         <span className="text-[11px] text-white/25">
-                          {Object.keys(row.changes).length} field{Object.keys(row.changes).length !== 1 ? 's' : ''}
+                          {row.change_count ?? Object.keys(row.changes).length} field{(row.change_count ?? Object.keys(row.changes).length) !== 1 ? 's' : ''}
                         </span>
                       )}
                       {Object.keys(row.changes).length > 0 && (
