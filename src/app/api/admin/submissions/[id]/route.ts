@@ -66,7 +66,7 @@ export async function PATCH(
 
   const { data: newPlayer, error: playerError } = await supabase
     .from('players')
-    .upsert(playerData, { onConflict: 'slug' })
+    .upsert(playerData as any, { onConflict: 'slug' })
     .select('id')
     .single()
 
