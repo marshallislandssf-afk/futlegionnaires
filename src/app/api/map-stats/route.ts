@@ -1,19 +1,22 @@
 import { NextResponse } from 'next/server'
 import { getMapStats } from '@/lib/players'
 
-export const runtime = 'edge'
+export const runtime = 'nodejs'
 
 export async function GET() {
   try {
     const stats = await getMapStats()
     return NextResponse.json(stats, {
-      headers: {
-        // Cache map stats for 5 minutes — doesn't need to be real-time
-        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600',
-      },
+      headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600' },
     })
-  } catch (err) {
+  } catch (err: any) {
     console.error('Map stats error:', err)
-    return NextResponse.json({ error: 'Failed to load map stats' }, { status: 500 })
+    // Return safe empty structure so the map page doesn't crash
+    return NextResponse.json({
+      total_players: 0,
+      confederations: [],
+      top_leagues: [],
+      top_nations: [],
+    })
   }
 }
