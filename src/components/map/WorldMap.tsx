@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import type { MapStats, Confederation } from '@/types'
 
 const CONF_COLOURS: Record<string, { fill: string; stroke: string }> = {
@@ -176,9 +177,11 @@ export function WorldMap({ stats, selectedConf, onSelectConf }: Props) {
   const lastPos = useRef({ x: 0, y: 0 })
   const featuresRef = useRef<{ el: SVGPathElement; name: string; conf: Confederation | null }[]>([])
 
+  const router = useRouter()
   const confCounts = Object.fromEntries(
     stats.confederations.map(c => [c.confederation, c.player_count])
   )
+  const countryCounts = stats.country_player_counts ?? {}
 
   // ── Search ──────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -343,7 +346,12 @@ export function WorldMap({ stats, selectedConf, onSelectConf }: Props) {
           })
           el.addEventListener('click', () => {
             if (isPanning.current) return
-            onSelectConf(selectedConf === conf ? null : conf)
+            if (name && countryCounts[name] !== undefined && countryCounts[name] > 0) {
+              // Navigate to players filtered by this nationality
+              router.push(`/players?nationality=${encodeURIComponent(name)}`)
+            } else {
+              onSelectConf(selectedConf === conf ? null : conf)
+            }
           })
         }
 
@@ -503,3 +511,4 @@ export function WorldMap({ stats, selectedConf, onSelectConf }: Props) {
     </div>
   )
 }
+
