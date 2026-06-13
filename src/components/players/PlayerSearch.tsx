@@ -30,11 +30,20 @@ function useDebounce<T>(value: T, delay: number): T {
   return debounced
 }
 
-export function PlayerSearch({ initialConf }: { initialConf?: Confederation }) {
+export function PlayerSearch({ initialConf, initialNationality }: { initialConf?: Confederation; initialNationality?: string }) {
   const [query, setQuery] = useState('')
   const [position, setPosition] = useState<Position | ''>('')
   const [confederation, setConfederation] = useState<Confederation | ''>(initialConf ?? '')
-  const [nationality, setNationality] = useState('')
+
+  // Read filters from URL params on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const nat = params.get('nationality')
+    const conf = params.get('confederation') as Confederation | null
+    if (nat) setNationality(nat)
+    if (conf) setConfederation(conf)
+  }, [])
+  const [nationality, setNationality] = useState(initialNationality ?? '')
   const [players, setPlayers] = useState<Player[]>([])
   const [total, setTotal] = useState<number>(0)
   const [page, setPage] = useState(1)
