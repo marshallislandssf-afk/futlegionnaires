@@ -264,6 +264,7 @@ export async function getMapStats(): Promise<MapStats> {
         confederation: v.confederation as any,
         player_count: v.count,
       })),
+    country_player_counts: natCounts,  // full per-country counts for map tooltips
     top_nations: Object.entries(natCounts)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 15)
