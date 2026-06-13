@@ -8,7 +8,6 @@ export async function GET(request: NextRequest) {
   const code       = searchParams.get('code')
   const token_hash = searchParams.get('token_hash')
   const type       = searchParams.get('type') as any
-  const next       = searchParams.get('next') ?? '/admin/dashboard'
   const error      = searchParams.get('error')
   const error_desc = searchParams.get('error_description')
 
@@ -42,9 +41,7 @@ export async function GET(request: NextRequest) {
     )
   }
 
-  // Set the session cookie so middleware can read it
-  const response = NextResponse.redirect(new URL(next, origin))
-  
+  // Set the session cookie
   const projectRef = process.env.NEXT_PUBLIC_SUPABASE_URL!
     .match(/https:\/\/([^.]+)\.supabase\.co/)?.[1] ?? ''
   const cookieName = `sb-${projectRef}-auth-token`
@@ -53,8 +50,11 @@ export async function GET(request: NextRequest) {
     session.refresh_token,
   ]))
 
+  // Always go to admin dashboard after login
+  const response = NextResponse.redirect(new URL('/admin/dashboard', origin))
+
   response.cookies.set(cookieName, cookieValue, {
-    httpOnly: false,   // Supabase client needs to read this
+    httpOnly: false,
     secure: true,
     sameSite: 'lax',
     maxAge: session.expires_in ?? 3600,
