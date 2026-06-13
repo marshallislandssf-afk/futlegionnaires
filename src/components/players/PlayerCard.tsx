@@ -17,7 +17,7 @@ const FLAG_MAP: Record<string, string> = {
   'North Macedonia': '🇲🇰', Montenegro: '🇲🇪', 'Bosnia and Herzegovina': '🇧🇦',
   Ireland: '🇮🇪', 'Republic of Ireland': '🇮🇪', Iceland: '🇮🇸',
   Luxembourg: '🇱🇺', Malta: '🇲🇹', Cyprus: '🇨🇾', Israel: '🇮🇱',
-  Armenia: '🇦🇲', Georgia: '🇬🇪', Azerbaijan: '🇦🇿', Kazakhstan: '🇰🇿',
+  Armenia: '🇦🇲', Georgia: '🇬🇪', Azerbaijan: '🇦🇿',
   Moldova: '🇲🇩', Estonia: '🇪🇪', Latvia: '🇱🇻', Lithuania: '🇱🇹',
   Belarus: '🇧🇾', 'Czech Republic': '🇨🇿',
   // CAF
