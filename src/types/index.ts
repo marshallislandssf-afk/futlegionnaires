@@ -187,6 +187,7 @@ export interface MapStats {
   top_leagues: LeagueStat[]
   top_nations: NationStat[]
   total_players: number
+  country_player_counts?: Record<string, number>  // per-country eligible player counts
 }
 
 // ─── Supabase DB row types ────────────────────────────────────────────────────
