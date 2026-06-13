@@ -189,51 +189,63 @@ export async function getMapStats(): Promise<MapStats> {
   const supabase = createServerSupabaseClient()
   const db = supabase as any
 
-  // Confederation counts
-  const { data: rawConfData } = await db
+  // Fetch all players with their nationalities and club info
+  const { data: rawAllData } = await db
     .from('players')
-    .select('current_club_confederation')
+    .select('nationality_1, nationality_2, nationality_3, nationality_4, nationality_5, current_club_country, current_club')
     .eq('is_active', true)
 
-  const confData = (rawConfData ?? []) as { current_club_confederation: string }[]
+  const allData = (rawAllData ?? []) as {
+    nationality_1?: string; nationality_2?: string; nationality_3?: string
+    nationality_4?: string; nationality_5?: string
+    current_club_country?: string; current_club?: string
+  }[]
+
+  // ── Confederation counts based on NATIONALITY (not club country) ──────────
+  // A player with Yemen + NZ nationalities counts for both AFC and OFC
   const confCounts: Record<string, number> = {}
-  for (const row of confData) {
-    const c = row.current_club_confederation
-    confCounts[c] = (confCounts[c] ?? 0) + 1
+  const countedConfPerPlayer = new Set<string>() // track to avoid double-counting same conf for same player
+
+  for (let i = 0; i < allData.length; i++) {
+    const row = allData[i]
+    const nats = [row.nationality_1, row.nationality_2, row.nationality_3,
+      row.nationality_4, row.nationality_5].filter(Boolean) as string[]
+    const confsForThisPlayer = new Set<string>()
+    for (const nat of nats) {
+      const conf = getConfederation(nat)
+      if (conf && !confsForThisPlayer.has(conf)) {
+        confsForThisPlayer.add(conf)
+        confCounts[conf] = (confCounts[conf] ?? 0) + 1
+      }
+    }
   }
 
-  // Top leagues (club + country grouped)
-  const { data: rawLeagueData } = await db
-    .from('players')
-    .select('current_club, current_club_country, current_club_confederation')
-    .eq('is_active', true)
-
-  const leagueData = (rawLeagueData ?? []) as { current_club: string; current_club_country: string; current_club_confederation: string }[]
+  // ── Top leagues by club country (still club-based — useful for scouts) ────
   const leagueCounts: Record<string, { country: string; confederation: string; count: number }> = {}
-  for (const row of leagueData) {
-    const key = row.current_club_country
+  for (const row of allData) {
+    const key = row.current_club_country ?? ''
+    if (!key) continue
     if (!leagueCounts[key]) {
-      leagueCounts[key] = { country: row.current_club_country, confederation: row.current_club_confederation, count: 0 }
+      leagueCounts[key] = {
+        country: key,
+        confederation: getConfederation(key),
+        count: 0,
+      }
     }
     leagueCounts[key].count++
   }
 
-  // Top nations with uncapped eligible players
-  const { data: rawNatData } = await db
-    .from('players')
-    .select('nationality_1, nationality_2, nationality_3, nationality_4, nationality_5')
-    .eq('is_active', true)
-
-  const natData = (rawNatData ?? []) as { nationality_1?: string; nationality_2?: string; nationality_3?: string; nationality_4?: string; nationality_5?: string }[]
+  // ── Top nations by nationality count ──────────────────────────────────────
   const natCounts: Record<string, number> = {}
-  for (const row of natData) {
-    const nats = [row.nationality_1, row.nationality_2, row.nationality_3, row.nationality_4, row.nationality_5].filter(Boolean)
+  for (const row of allData) {
+    const nats = [row.nationality_1, row.nationality_2, row.nationality_3,
+      row.nationality_4, row.nationality_5].filter(Boolean) as string[]
     for (const nat of nats) {
-      if (nat) natCounts[nat] = (natCounts[nat] ?? 0) + 1
+      natCounts[nat] = (natCounts[nat] ?? 0) + 1
     }
   }
 
-  const totalPlayers = confData.length
+  const totalPlayers = allData.length
 
   return {
     total_players: totalPlayers,
