@@ -1,40 +1,36 @@
 import { createClient } from '@supabase/supabase-js'
-import { createBrowserClient, createServerClient } from '@supabase/ssr'
-import type { Database } from '@/types'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Supabase environment variables are not set. Check .env.local')
-}
+// ─── Browser client ───────────────────────────────────────────
+// Singleton — one instance per browser context, avoids the
+// "Multiple GoTrueClient instances" warning
+let _browserClient: ReturnType<typeof createClient> | null = null
 
-// ─── Browser client (safe to use in Client Components) ───────────────────────
 export function createBrowserSupabaseClient() {
-  return createBrowserClient<Database>(supabaseUrl, supabaseAnonKey)
+  if (typeof window === 'undefined') return createClient(supabaseUrl, supabaseAnonKey)
+  if (!_browserClient) {
+    _browserClient = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
+      },
+    })
+  }
+  return _browserClient
 }
-
-// ─── Server client (for Route Handlers and Server Components) ────────────────
-// Uses service role key when elevated permissions are needed (admin writes)
-export function createServerSupabaseClient() {
-  return createClient<Database>(
-    supabaseUrl,
-    process.env.SUPABASE_SERVICE_ROLE_KEY ?? supabaseAnonKey,
-    {
-      auth: { persistSession: false },
-    }
-  )
-}
-
-// ─── Singleton browser client ─────────────────────────────────────────────────
-let browserClient: ReturnType<typeof createBrowserSupabaseClient> | null = null
 
 export function getSupabaseClient() {
-  if (typeof window === 'undefined') {
-    throw new Error('getSupabaseClient() called on the server. Use createServerSupabaseClient() instead.')
-  }
-  if (!browserClient) {
-    browserClient = createBrowserSupabaseClient()
-  }
-  return browserClient
+  return createBrowserSupabaseClient()
+}
+
+// ─── Server client ────────────────────────────────────────────
+export function createServerSupabaseClient() {
+  return createClient(
+    supabaseUrl,
+    process.env.SUPABASE_SERVICE_ROLE_KEY ?? supabaseAnonKey,
+    { auth: { persistSession: false, autoRefreshToken: false } }
+  )
 }
