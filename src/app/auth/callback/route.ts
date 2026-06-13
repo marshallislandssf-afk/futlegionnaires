@@ -1,44 +1,65 @@
-import { createServerSupabaseClient } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 
 export const runtime = 'nodejs'
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
+  const code       = searchParams.get('code')
+  const token_hash = searchParams.get('token_hash')
+  const type       = searchParams.get('type') as any
+  const next       = searchParams.get('next') ?? '/admin/dashboard'
+  const error      = searchParams.get('error')
+  const error_desc = searchParams.get('error_description')
 
-  const code         = searchParams.get('code')
-  const token_hash   = searchParams.get('token_hash')
-  const type         = searchParams.get('type')
-  const next         = searchParams.get('next') ?? '/admin/dashboard'
-  const error        = searchParams.get('error')
-  const error_desc   = searchParams.get('error_description')
-
-  // If Supabase sent an error, show it
   if (error) {
-    console.error('Auth callback error:', error, error_desc)
     return NextResponse.redirect(
       new URL(`/auth/login?error=${encodeURIComponent(error_desc ?? error)}`, origin)
     )
   }
 
-  const supabase = createServerSupabaseClient()
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { auth: { persistSession: false } }
+  )
 
-  // PKCE flow (code)
+  let session = null
+
   if (code) {
-    const { error } = await (supabase as any).auth.exchangeCodeForSession(code)
-    if (!error) {
-      return NextResponse.redirect(new URL(next, origin))
-    }
+    const { data, error: err } = await supabase.auth.exchangeCodeForSession(code)
+    if (!err) session = data.session
   }
 
-  // Magic link / OTP flow (token_hash)
-  if (token_hash && type) {
-    const { error } = await (supabase as any).auth.verifyOtp({ token_hash, type })
-    if (!error) {
-      return NextResponse.redirect(new URL(next, origin))
-    }
+  if (!session && token_hash && type) {
+    const { data, error: err } = await supabase.auth.verifyOtp({ token_hash, type })
+    if (!err) session = data.session
   }
 
-  // Fallback — something went wrong
-  return NextResponse.redirect(new URL('/auth/login?error=Link+expired+or+invalid.+Please+request+a+new+one.', origin))
+  if (!session) {
+    return NextResponse.redirect(
+      new URL('/auth/login?error=Link+expired+or+invalid.+Please+request+a+new+one.', origin)
+    )
+  }
+
+  // Set the session cookie so middleware can read it
+  const response = NextResponse.redirect(new URL(next, origin))
+  
+  const projectRef = process.env.NEXT_PUBLIC_SUPABASE_URL!
+    .match(/https:\/\/([^.]+)\.supabase\.co/)?.[1] ?? ''
+  const cookieName = `sb-${projectRef}-auth-token`
+  const cookieValue = encodeURIComponent(JSON.stringify([
+    session.access_token,
+    session.refresh_token,
+  ]))
+
+  response.cookies.set(cookieName, cookieValue, {
+    httpOnly: false,   // Supabase client needs to read this
+    secure: true,
+    sameSite: 'lax',
+    maxAge: session.expires_in ?? 3600,
+    path: '/',
+  })
+
+  return response
 }
