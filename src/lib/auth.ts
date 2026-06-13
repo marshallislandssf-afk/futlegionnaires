@@ -1,11 +1,6 @@
-/**
- * Auth helpers — server-side only
- * Used in Route Handlers and Server Components.
- */
-import { createServerClient } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
-import type { Database } from '@/types'
 
 export type UserRole = 'super_admin' | 'country_manager'
 
@@ -14,36 +9,56 @@ export interface AdminUser {
   email: string
   role: UserRole
   full_name?: string
-  countries: string[]   // Empty for super_admin (has access to all)
+  countries: string[]
   is_active: boolean
 }
 
-// ─── Create an auth-aware Supabase client for server use ──────────────────────
+// Server-side client that reads the session from cookies
 export function createAuthClient() {
-  const cookieStore = cookies()
-  return createServerClient<Database>(
+  // Use service role so we can read user_profiles regardless of RLS
+  return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) { return cookieStore.get(name)?.value },
-        set(name: string, value: string, options: Record<string, unknown>) { cookieStore.set({ name, value, ...options } as any) },
-        remove(name: string, options: Record<string, unknown>) { cookieStore.set({ name, value: '', ...options } as any) },
-      },
-    }
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false, autoRefreshToken: false } }
   )
 }
 
-// ─── Get the current admin user (or null) ────────────────────────────────────
+// Get session from the auth cookie Supabase sets
+async function getSessionFromCookies() {
+  const cookieStore = cookies()
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+  const projectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1] ?? ''
+  
+  // Supabase stores the session in a cookie named sb-{projectRef}-auth-token
+  const cookieName = `sb-${projectRef}-auth-token`
+  const rawCookie = cookieStore.get(cookieName)?.value
+  
+  if (!rawCookie) return null
+  
+  try {
+    const parsed = JSON.parse(decodeURIComponent(rawCookie))
+    // Cookie can be an array [accessToken, refreshToken] or an object
+    const accessToken = Array.isArray(parsed) ? parsed[0] : parsed?.access_token
+    return accessToken ?? null
+  } catch {
+    return null
+  }
+}
+
 export async function getAdminUser(): Promise<AdminUser | null> {
   const supabase = createAuthClient()
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session) return null
+  
+  const token = await getSessionFromCookies()
+  if (!token) return null
+
+  // Verify the token and get the user
+  const { data: { user }, error } = await supabase.auth.getUser(token)
+  if (error || !user) return null
 
   const { data: profile } = await (supabase as any)
     .from('user_profiles')
     .select('id, email, role, full_name, is_active')
-    .eq('id', session.user.id)
+    .eq('id', user.id)
     .single()
 
   if (!profile || !profile.is_active) return null
@@ -51,44 +66,36 @@ export async function getAdminUser(): Promise<AdminUser | null> {
   const { data: countryRows } = await (supabase as any)
     .from('user_countries')
     .select('country')
-    .eq('user_id', session.user.id)
+    .eq('user_id', user.id)
 
   return {
     id: profile.id,
     email: profile.email,
     role: profile.role as UserRole,
     full_name: profile.full_name ?? undefined,
-    countries: countryRows?.map((r: { country: string }) => r.country) ?? [],
+    countries: (countryRows ?? []).map((r: { country: string }) => r.country),
     is_active: profile.is_active,
   }
 }
 
-// ─── Require auth — redirects to login if not signed in ──────────────────────
 export async function requireAdmin(): Promise<AdminUser> {
   const user = await getAdminUser()
   if (!user) redirect('/auth/login')
   return user
 }
 
-// ─── Require super admin ──────────────────────────────────────────────────────
 export async function requireSuperAdmin(): Promise<AdminUser> {
   const user = await requireAdmin()
   if (user.role !== 'super_admin') redirect('/admin/dashboard')
   return user
 }
 
-// ─── Check if a user can edit a player (based on nationality overlap) ─────────
-export function canEditPlayer(
-  user: AdminUser,
-  playerNationalities: (string | null | undefined)[]
-): boolean {
+export function canEditPlayer(user: AdminUser, playerNationalities: (string | null | undefined)[]): boolean {
   if (user.role === 'super_admin') return true
   const nats = playerNationalities.filter(Boolean) as string[]
   return nats.some(n => user.countries.includes(n))
 }
 
-// ─── Filter a query to only show players this manager can see ─────────────────
-// Returns the set of nationality values to filter by, or null for super_admin
 export function getCountryFilter(user: AdminUser): string[] | null {
   if (user.role === 'super_admin') return null
   return user.countries
