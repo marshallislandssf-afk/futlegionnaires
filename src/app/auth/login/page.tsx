@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
 import { Mail, CheckCircle, AlertCircle } from 'lucide-react'
 
 export default function LoginPage() {
@@ -14,40 +13,54 @@ export default function LoginPage() {
     e.preventDefault()
     setLoading(true)
     setError(null)
+
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
     if (!supabaseUrl || !supabaseKey) {
-      setError('Supabase configuration missing. Check environment variables in Vercel.')
+      setError('Configuration error — check Vercel environment variables.')
       setLoading(false)
       return
     }
 
-    const supabase = createClient(supabaseUrl, supabaseKey)
-
     const redirectTo = `${window.location.origin}/auth/callback`
 
-    const { error } = await (supabase as any).auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: redirectTo,
-        shouldCreateUser: false,
-      },
-    })
+    // Call Supabase auth API directly — avoids any SDK routing issues
+    try {
+      const res = await fetch(`${supabaseUrl}/auth/v1/otp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+        },
+        body: JSON.stringify({
+          email,
+          create_user: false,
+          data: {},
+          gotrue_meta_security: {},
+          options: { emailRedirectTo: redirectTo },
+        }),
+      })
 
-    if (error) {
-      if (error.message?.includes('not found') || error.message?.includes('Invalid login')) {
-        setError("This email hasn't been invited. Contact your FutLegionnaires admin.")
+      if (res.ok || res.status === 200) {
+        setSent(true)
       } else {
-        setError(error.message)
+        const data = await res.json().catch(() => ({}))
+        const msg = data?.msg ?? data?.message ?? data?.error_description ?? `Error ${res.status}`
+        if (msg.toLowerCase().includes('user') || res.status === 422) {
+          setError("This email hasn't been invited. Contact your FutLegionnaires admin.")
+        } else {
+          setError(msg)
+        }
       }
-    } else {
-      setSent(true)
+    } catch (err: any) {
+      setError(err.message ?? 'Network error — please try again.')
     }
+
     setLoading(false)
   }
 
-  // Read error from URL (set by callback on failure)
   const urlError = typeof window !== 'undefined'
     ? new URLSearchParams(window.location.search).get('error')
     : null
@@ -77,9 +90,7 @@ export default function LoginPage() {
               We sent a magic link to <span className="text-white/60">{email}</span>.
               Click it to sign in — no password needed.
             </p>
-            <p className="text-xs text-white/25 mt-3">
-              Check your spam folder if it doesn't arrive within a minute.
-            </p>
+            <p className="text-xs text-white/25 mt-3">Check spam if it doesn't arrive within a minute.</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="bg-white/[0.04] border border-white/10 rounded-xl p-6">
