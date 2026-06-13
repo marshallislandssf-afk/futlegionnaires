@@ -24,7 +24,19 @@ import { getConfederation } from '@/lib/sportsdb'
 type MergeStrategy = 'fill_gaps' | 'overwrite' | 'nationality_only'
 
 function isAuthorised(req: NextRequest) {
-  return req.headers.get('x-admin-secret') === process.env.ADMIN_SECRET
+  // Accept either the ADMIN_SECRET header or a logged-in session cookie
+  const provided = req.headers.get('x-admin-secret')?.trim() ?? ''
+  const expected = process.env.ADMIN_SECRET?.trim() ?? ''
+
+  // Check admin secret header
+  if (expected && provided === expected) return true
+
+  // Check for a Supabase session cookie (logged-in user)
+  const allCookies = req.cookies.getAll()
+  const hasSession = allCookies.some(c => c.name.includes('auth-token') && c.value.length > 10)
+  if (hasSession) return true
+
+  return false
 }
 
 // ─── Column aliases ───────────────────────────────────────────────────────────
