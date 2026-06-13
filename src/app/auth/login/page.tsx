@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { createBrowserSupabaseClient } from '@/lib/supabase'
-import { Mail, CheckCircle } from 'lucide-react'
+import { Mail, CheckCircle, AlertCircle } from 'lucide-react'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -15,35 +15,61 @@ export default function LoginPage() {
     setLoading(true)
     setError(null)
     const supabase = createBrowserSupabaseClient()
-    const { error } = await supabase.auth.signInWithOtp({
+
+    const redirectTo = `${window.location.origin}/auth/callback`
+
+    const { error } = await (supabase as any).auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-        shouldCreateUser: false, // Only allow pre-invited users
+        emailRedirectTo: redirectTo,
+        shouldCreateUser: false,
       },
     })
-    if (error) setError(error.message)
-    else setSent(true)
+
+    if (error) {
+      if (error.message?.includes('not found') || error.message?.includes('Invalid login')) {
+        setError("This email hasn't been invited. Contact your FutLegionnaires admin.")
+      } else {
+        setError(error.message)
+      }
+    } else {
+      setSent(true)
+    }
     setLoading(false)
   }
 
+  // Read error from URL (set by callback on failure)
+  const urlError = typeof window !== 'undefined'
+    ? new URLSearchParams(window.location.search).get('error')
+    : null
+
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
+    <div className="min-h-screen flex items-center justify-center px-4 bg-[#0a0f0d]">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <h1 className="text-xl font-semibold mb-1">
+          <h1 className="text-xl font-semibold mb-1 text-white">
             Fut<span className="text-[#1D9E75]">Legionnaires</span>
           </h1>
           <p className="text-white/40 text-sm">Admin portal</p>
         </div>
 
+        {(error || urlError) && (
+          <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3 mb-4 text-sm text-red-400">
+            <AlertCircle size={15} className="mt-0.5 flex-shrink-0" />
+            {error ?? urlError}
+          </div>
+        )}
+
         {sent ? (
           <div className="bg-[#1D9E75]/10 border border-[#1D9E75]/25 rounded-xl p-6 text-center">
             <CheckCircle size={32} className="text-[#1D9E75] mx-auto mb-3" />
-            <p className="text-sm font-medium mb-1">Check your email</p>
+            <p className="text-sm font-medium text-white mb-1">Check your email</p>
             <p className="text-xs text-white/40">
               We sent a magic link to <span className="text-white/60">{email}</span>.
               Click it to sign in — no password needed.
+            </p>
+            <p className="text-xs text-white/25 mt-3">
+              Check your spam folder if it doesn't arrive within a minute.
             </p>
           </div>
         ) : (
@@ -57,13 +83,6 @@ export default function LoginPage() {
               required
               className="w-full bg-white/[0.05] border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-[#1D9E75]/50 mb-4"
             />
-            {error && (
-              <p className="text-xs text-red-400 bg-red-400/10 border border-red-400/20 rounded px-3 py-2 mb-4">
-                {error === 'Signups not allowed for this instance'
-                  ? 'This email hasn\'t been invited. Contact your FutLegionnaires admin.'
-                  : error}
-              </p>
-            )}
             <button
               type="submit"
               disabled={loading}
