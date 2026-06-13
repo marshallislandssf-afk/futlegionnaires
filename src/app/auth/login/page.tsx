@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { createBrowserSupabaseClient } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
 import { Mail, CheckCircle, AlertCircle } from 'lucide-react'
 
 export default function LoginPage() {
@@ -14,7 +14,10 @@ export default function LoginPage() {
     e.preventDefault()
     setLoading(true)
     setError(null)
-    const supabase = createBrowserSupabaseClient()
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
 
     const redirectTo = `${window.location.origin}/auth/callback`
 
