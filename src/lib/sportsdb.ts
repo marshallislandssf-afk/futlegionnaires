@@ -220,5 +220,19 @@ const COUNTRY_CONFEDERATION: Record<string, Confederation> = {
 }
 
 export function getConfederation(country: string): Confederation {
-  return COUNTRY_CONFEDERATION[country] ?? 'UEFA'
+  if (!country) return 'UEFA'
+  // Try exact match first
+  if (COUNTRY_CONFEDERATION[country]) return COUNTRY_CONFEDERATION[country]
+  // Try case-insensitive match
+  const lower = country.toLowerCase().trim()
+  const found = Object.entries(COUNTRY_CONFEDERATION).find(
+    ([k]) => k.toLowerCase() === lower
+  )
+  if (found) return found[1]
+  // Try partial match for common abbreviations
+  const partialMatch = Object.entries(COUNTRY_CONFEDERATION).find(
+    ([k]) => k.toLowerCase().includes(lower) || lower.includes(k.toLowerCase())
+  )
+  if (partialMatch) return partialMatch[1]
+  return 'UEFA'
 }
